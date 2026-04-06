@@ -1,0 +1,22 @@
+# 环境变量 / 敏感信息
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 虚拟环境
+venv/
+.venv/
+
+# Django
+*.log
+db.sqlite3
+/staticfiles/
+/mediafiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="">
+<head>
+<meta charset="UTF-8">
+<title>书签</title>
+<style>
+  :root {
+    --bg-page:    #f5f6fa;
+    --bg-card:    #ffffff;
+    --bg-tag:     #e4e7f0;
+    --bg-tag-active: #4f6ef7;
+    --bg-visit:   #f0f2fc;
+    --text-main:  #1a1a2e;
+    --text-muted: #666;
+    --text-hint:  #aaa;
+    --text-tag:   #555;
+    --border:     #e2e4ec;
+    --accent:     #4f6ef7;
+    --accent-h:   #3a57d6;
+    --input-bg:   #ffffff;
+    --radio-bg:   #eef0fb;
+  }
+  [data-theme="dark"] {
+    --bg-page:    #0f1117;
+    --bg-card:    #1c1e27;
+    --bg-tag:     #2a2d3a;
+    --bg-tag-active: #4f6ef7;
+    --bg-visit:   #232638;
+    --text-main:  #e8eaf6;
+    --text-muted: #9ea3b8;
+    --text-hint:  #5c6178;
+    --text-tag:   #b0b4cc;
+    --border:     #2e3145;
+    --accent:     #6b84fa;
+    --accent-h:   #8fa0fb;
+    --input-bg:   #1c1e27;
+    --radio-bg:   #232638;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) {
+      --bg-page:    #0f1117;
+      --bg-card:    #1c1e27;
+      --bg-tag:     #2a2d3a;
+      --bg-tag-active: #4f6ef7;
+      --bg-visit:   #232638;
+      --text-main:  #e8eaf6;
+      --text-muted: #9ea3b8;
+      --text-hint:  #5c6178;
+      --text-tag:   #b0b4cc;
+      --border:     #2e3145;
+      --accent:     #6b84fa;
+      --accent-h:   #8fa0fb;
+      --input-bg:   #1c1e27;
+      --radio-bg:   #232638;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg-page); color: var(--text-main); padding: 24px; transition: background .2s, color .2s; }
+
+  /* 顶栏 */
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  h1 { font-size: 1.5rem; }
+  #theme-btn {
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem;
+  }
+  #theme-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* 搜索区 */
+  .search-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .search-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search-bar input {
+    flex: 1; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.95rem;
+    background: var(--input-bg); color: var(--text-main);
+  }
+  .search-bar input:focus { outline: none; border-color: var(--accent); }
+  .search-bar button {
+    padding: 8px 18px; background: var(--accent); color: #fff;
+    border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+  }
+  .search-bar button:hover { background: var(--accent-h); }
+  .search-scope { display: flex; gap: 6px; flex-wrap: wrap; }
+  .search-scope label {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 20px; cursor: pointer; font-size: 0.82rem;
+    background: var(--radio-bg); color: var(--text-muted);
+    border: 1px solid transparent; user-select: none;
+  }
+  .search-scope input[type="radio"] { display: none; }
+  .search-scope input[type="radio"]:checked + span {
+    color: var(--accent); font-weight: 500;
+  }
+  .search-scope label:has(input:checked) {
+    border-color: var(--accent); background: var(--bg-visit);
+  }
+
+  /* 标签筛选 */
+  .tag-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .tag-filter a {
+    padding: 4px 12px; border-radius: 20px; font-size: 0.82rem;
+    background: var(--bg-tag); color: var(--text-tag); text-decoration: none;
+  }
+  .tag-filter a:hover { opacity: .8; }
+  .tag-filter a.active { background: var(--bg-tag-active); color: #fff; }
+
+  /* 卡片 */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-header { display: flex; align-items: center; gap: 8px; }
+  .card-header img { width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0; }
+  .card-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+  .card-url { font-size: 0.78rem; color: var(--text-hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .card-tags a {
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 10px;
+    background: var(--bg-visit); color: var(--accent); text-decoration: none;
+  }
+  .card-meta { font-size: 0.72rem; color: var(--text-hint); }
+  .visit-btn {
+    display: block; margin-top: 8px; text-align: center;
+    background: var(--bg-visit); color: var(--accent);
+    padding: 6px; border-radius: 6px; text-decoration: none; font-size: 0.85rem;
+    border: 1px solid transparent;
+  }
+  .visit-btn:hover { background: var(--accent); color: #fff; }
+
+  /* 分页 */
+  .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 32px; flex-wrap: wrap; }
+  .pagination a, .pagination span {
+    padding: 6px 12px; border-radius: 6px; font-size: 0.88rem;
+    text-decoration: none; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-muted);
+  }
+  .pagination a:hover { border-color: var(--accent); color: var(--accent); }
+  .pagination .current { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .empty { text-align: center; color: var(--text-hint); margin-top: 48px; font-size: 0.95rem; }
+
+  /* 卡片操作按钮 */
+  .card-actions { display: flex; gap: 4px; }
+  .action-btn {
+    background: none; border: 1px solid var(--border); border-radius: 5px;
+    color: var(--text-muted); cursor: pointer; font-size: 0.78rem;
+    padding: 2px 7px; line-height: 1.5;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .action-btn.del:hover { border-color: #e74c3c; color: #e74c3c; }
+  .add-btn {
+    background: var(--accent); color: #fff; border: none;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem;
+  }
+  .add-btn:hover { background: var(--accent-h); }
+
+  /* 模态框 */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; width: min(520px, 94vw);
+    max-height: 88vh; display: flex; flex-direction: column;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    font-weight: 600; font-size: 1rem; flex-shrink: 0;
+  }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0 4px;
+  }
+  .modal-close:hover { color: var(--text-main); }
+  .modal-body {
+    padding: 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group > label { font-size: 0.82rem; color: var(--text-muted); }
+  .field-group input, .field-group textarea, .field-group select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--input-bg); color: var(--text-main);
+    font-size: 0.9rem; font-family: inherit;
+  }
+  .field-group input:focus, .field-group textarea:focus, .field-group select:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field-group { flex: 1; }
+  .toggle-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.88rem; color: var(--text-main); cursor: pointer; user-select: none;
+  }
+  .tag-check-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag-check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .tag-check-item input[type="checkbox"] { display: none; }
+  .tag-check-item span {
+    padding: 3px 10px; border-radius: 14px; font-size: 0.8rem;
+    background: var(--bg-tag); color: var(--text-tag);
+    border: 2px solid transparent; user-select: none;
+  }
+  .tag-check-item input:checked + span { border-color: var(--accent); }
+  .modal-foot {
+    padding: 14px 20px; border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+  }
+  .btn-cancel {
+    padding: 8px 18px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-size: 0.9rem;
+  }
+  .btn-cancel:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-save {
+    padding: 8px 18px; border: none; border-radius: 6px;
+    background: var(--accent); color: #fff; cursor: pointer; font-size: 0.9rem;
+  }
+  .btn-save:hover { background: var(--accent-h); }
+
+  /* 标签管理模态框 */
+  .tag-mgmt-btn {
+    padding: 4px 12px; border-radius: 20px; font-size: 0.82rem;
+    background: none; border: 1px dashed var(--border);
+    color: var(--text-muted); cursor: pointer;
+  }
+  .tag-mgmt-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tag-mgmt-list { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow-y: auto; }
+  .tag-mgmt-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 6px;
+    background: var(--bg-page); transition: background .1s;
+  }
+  .tag-mgmt-item:hover { background: var(--bg-visit); }
+  .color-dot {
+    width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .tag-mgmt-info { flex: 1; min-width: 0; }
+  .tag-mgmt-name { font-size: 0.88rem; }
+  .tag-mgmt-slug { font-size: 0.73rem; color: var(--text-hint); }
+  .tag-mgmt-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .tag-sep { border: none; border-top: 1px solid var(--border); margin: 8px 0 4px; }
+  .tag-form-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px;
+  }
+  .tag-form-head span { font-weight: 600; color: var(--text-main); }
+  .color-row { display: flex; align-items: center; gap: 8px; }
+  .color-row input[type="color"] {
+    width: 34px; height: 32px; padding: 2px 3px;
+    border: 1px solid var(--border); border-radius: 5px;
+    cursor: pointer; background: var(--input-bg); flex-shrink: 0;
+  }
+  .color-row input[type="text"] { flex: 1; }
+  .btn-new-tag {
+    padding: 4px 12px; border-radius: 14px; font-size: 0.8rem;
+    background: none; border: 1px solid var(--border);
+    color: var(--text-muted); cursor: pointer;
+  }
+  .btn-new-tag:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📌 我的书签</h1>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="add-btn" onclick="openCreateModal()">＋ 添加书签</button>
+    <button id="theme-btn" onclick="toggleTheme()">切换夜间模式</button>
+  </div>
+</div>
+
+<!-- 搜索 -->
+<form method="get" action="">
+  <div class="search-wrap">
+    <div class="search-bar">
+      <input type="text" name="keyword" value="{{ keyword }}" placeholder="输入关键词…">
+      {% if tag_slug %}<input type="hidden" name="tag" value="{{ tag_slug }}">{% endif %}
+      <button type="submit">搜索</button>
+    </div>
+    <div class="search-scope">
+      <label>
+        <input type="radio" name="search_in" value="title"
+          {% if search_in == 'title' or not search_in %}checked{% endif %}>
+        <span>搜索标题</span>
+      </label>
+      <label>
+        <input type="radio" name="search_in" value="description"
+          {% if search_in == 'description' %}checked{% endif %}>
+        <span>搜索描述</span>
+      </label>
+      <label>
+        <input type="radio" name="search_in" value="all"
+          {% if search_in == 'all' %}checked{% endif %}>
+        <span>标题 + 描述</span>
+      </label>
+    </div>
+  </div>
+</form>
+
+<!-- 标签筛选 -->
+<div class="tag-filter">
+  <a href="?{% if keyword %}keyword={{ keyword }}&search_in={{ search_in }}{% endif %}"
+     class="{% if not tag_slug %}active{% endif %}">全部</a>
+  {% for tag in all_tags %}
+    <a href="?{% if keyword %}keyword={{ keyword }}&search_in={{ search_in }}&{% endif %}tag={{ tag.slug }}"
+       class="{% if tag_slug == tag.slug %}active{% endif %}"
+       {% if tag.color %}style="background:{{ tag.color }}22;color:{{ tag.color }};border-color:{{ tag.color }}44"{% endif %}>
+      {{ tag.name }}
+    </a>
+  {% endfor %}
+  <button class="tag-mgmt-btn" onclick="openTagModal()">⚙ 管理标签</button>
+</div>
+
+<!-- 卡片 -->
+{% if page_obj %}
+  <div class="grid">
+    {% for item in page_obj %}
+      <div class="card">
+        <div class="card-header">
+          {% if item.favicon_url %}
+            <img src="{{ item.favicon_url }}" alt="" onerror="this.style.display='none'">
+          {% endif %}
+          <span class="card-title" title="{{ item.title }}">{{ item.title }}</span>
+        </div>
+        <div class="card-url">{{ item.url }}</div>
+        {% if item.description %}
+          <div class="card-desc">{{ item.description }}</div>
+        {% endif %}
+        <div class="card-footer">
+          <div class="card-tags">
+            {% for bt in item.bookmarktags_set.all %}
+              <a href="?tag={{ bt.tag.slug }}">{{ bt.tag.name }}</a>
+            {% endfor %}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="card-meta">👁 {{ item.visit_count }}</span>
+            <div class="card-actions">
+              <button class="action-btn" onclick="openEditModal({{ item.pk }})" title="编辑">✏</button>
+              <button class="action-btn del" onclick="deleteBookmark({{ item.pk }})" title="删除">✕</button>
+            </div>
+          </div>
+        </div>
+        <a href="{% url 'webpage:bookmark_visit' item.pk %}" class="visit-btn" target="_blank">访问 →</a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- 分页（透传所有参数） -->
+  {% with base="?keyword="|add:keyword|add:"&search_in="|add:search_in|add:"&tag="|add:tag_slug|add:"&per_page="|add:per_page|add:"&page=" %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="{{ base }}{{ page_obj.previous_page_number }}">‹ 上一页</a>
+    {% endif %}
+    <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="{{ base }}{{ page_obj.next_page_number }}">下一页 ›</a>
+    {% endif %}
+  </div>
+  {% endwith %}
+
+{% else %}
+  <p class="empty">😶 没有找到相关书签</p>
+{% endif %}
+
+<!-- 标签管理模态框 -->
+<div id="tag-modal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>管理标签</span>
+      <button class="modal-close" onclick="closeTagModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 标签列表 -->
+      <div id="tag-list" class="tag-mgmt-list">
+        <span style="color:var(--text-hint);font-size:.85rem">加载中…</span>
+      </div>
+
+      <hr class="tag-sep">
+
+      <!-- 新增 / 编辑表单 -->
+      <div class="tag-form-head">
+        <span id="tag-form-title">新增标签</span>
+        <button class="btn-new-tag" onclick="startAddTag()">＋ 新标签</button>
+      </div>
+      <div class="field-group">
+        <label>名称 *</label>
+        <input id="tf-name" type="text" placeholder="如：工具、AI、博客">
+      </div>
+      <div class="field-group">
+        <label>Slug *</label>
+        <input id="tf-slug" type="text" placeholder="如：tools、ai、blog">
+      </div>
+      <div class="field-group">
+        <label>颜色</label>
+        <div class="color-row">
+          <input id="tf-color-picker" type="color" value="#6B7280"
+                 oninput="document.getElementById('tf-color').value=this.value">
+          <input id="tf-color" type="text" placeholder="#6B7280（可留空）"
+                 oninput="syncColorPicker()">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeTagModal()">关闭</button>
+      <button class="btn-save" onclick="saveTag()">保存标签</button>
+    </div>
+  </div>
+</div>
+
+<!-- 添加/编辑书签模态框 -->
+<div id="bm-modal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="modal-title">添加书签</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>URL *</label>
+        <input id="f-url" type="url" placeholder="https://…">
+      </div>
+      <div class="field-group">
+        <label>标题 *</label>
+        <input id="f-title" type="text" placeholder="网站标题">
+      </div>
+      <div class="field-group">
+        <label>描述</label>
+        <textarea id="f-description" rows="3" placeholder="简短描述…"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Favicon URL</label>
+        <input id="f-favicon" type="url" placeholder="https://…/favicon.ico">
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>地域</label>
+          <select id="f-domestic">
+            <option value="1">国内</option>
+            <option value="0">国外</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>规模</label>
+          <select id="f-scale">
+            <option value="personal">personal</option>
+            <option value="enterprise">enterprise</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row" style="gap:20px">
+        <label class="toggle-label">
+          <input id="f-active" type="checkbox" checked>
+          <span>可访问</span>
+        </label>
+        <label class="toggle-label">
+          <input id="f-favorite" type="checkbox">
+          <span>收藏星标</span>
+        </label>
+      </div>
+      {% if all_tags %}
+      <div class="field-group">
+        <label>标签</label>
+        <div class="tag-check-list">
+          {% for tag in all_tags %}
+          <label class="tag-check-item">
+            <input type="checkbox" class="tag-check" value="{{ tag.id }}">
+            <span {% if tag.color %}style="background:{{ tag.color }}22;color:{{ tag.color }}"{% endif %}>{{ tag.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-save" onclick="saveBookmark()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const html = document.documentElement;
+  const btn  = document.getElementById('theme-btn');
+
+  function applyTheme(t) {
+    html.setAttribute('data-theme', t);
+    btn.textContent = t === 'dark' ? '切换白天模式' : '切换夜间模式';
+  }
+
+  function toggleTheme() {
+    const cur = html.getAttribute('data-theme');
+    const next = (cur === 'dark') ? 'light' : 'dark';
+    localStorage.setItem('bm-theme', next);
+    applyTheme(next);
+  }
+
+  // 初始化：优先读 localStorage，其次跟系统
+  const saved = localStorage.getItem('bm-theme');
+  if (saved) {
+    applyTheme(saved);
+  } else {
+    const sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    applyTheme(sys);
+  }
+
+  // ── 增删改 ──────────────────────────────────────────────
+  let _editingId = null;
+
+  function getCsrf() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  function openCreateModal() {
+    _editingId = null;
+    document.getElementById('modal-title').textContent = '添加书签';
+    ['f-url','f-title','f-description','f-favicon','f-scale'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('f-domestic').value = '0';
+    document.getElementById('f-active').checked = true;
+    document.getElementById('f-favorite').checked = false;
+    document.querySelectorAll('.tag-check').forEach(cb => cb.checked = false);
+    document.getElementById('bm-modal').classList.add('open');
+  }
+
+  async function openEditModal(id) {
+    _editingId = id;
+    document.getElementById('modal-title').textContent = '编辑书签';
+    const resp = await fetch(`/api/bookmarks/${id}/`);
+    const d = await resp.json();
+    document.getElementById('f-url').value        = d.url;
+    document.getElementById('f-title').value      = d.title;
+    document.getElementById('f-description').value = d.description;
+    document.getElementById('f-favicon').value    = d.favicon_url;
+    document.getElementById('f-domestic').value   = d.is_domestic;
+    document.getElementById('f-scale').value      = d.site_scale;
+    document.getElementById('f-active').checked   = !!d.is_active;
+    document.getElementById('f-favorite').checked = !!d.is_favorite;
+    const tagIds = (d.tags || []).map(t => t.id);
+    document.querySelectorAll('.tag-check').forEach(cb => {
+      cb.checked = tagIds.includes(parseInt(cb.value));
+    });
+    document.getElementById('bm-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('bm-modal').classList.remove('open');
+    _editingId = null;
+  }
+
+async function saveBookmark() {
+    const url   = document.getElementById('f-url').value.trim();
+    const title = document.getElementById('f-title').value.trim();
+    if (!url || !title) { alert('URL 和标题不能为空'); return; }
+
+    const payload = {
+      url, title,
+      description : document.getElementById('f-description').value.trim(),
+      favicon_url : document.getElementById('f-favicon').value.trim(),
+      is_domestic : parseInt(document.getElementById('f-domestic').value),
+      site_scale  : document.getElementById('f-scale').value.trim() || 'medium',
+      is_active   : document.getElementById('f-active').checked   ? 1 : 0,
+      is_favorite : document.getElementById('f-favorite').checked ? 1 : 0,
+      tag_ids     : [...document.querySelectorAll('.tag-check:checked')].map(cb => parseInt(cb.value)),
+    };
+
+    const endpoint = _editingId
+      ? `/api/bookmarks/${_editingId}/`
+      : '/api/bookmarks/';
+
+    const resp = await fetch(endpoint, {
+      method : _editingId ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+      body   : JSON.stringify(payload),
+    });
+
+    if (resp.ok) {
+      closeModal();
+      location.reload();
+    } else {
+      const body = await resp.json().catch(() => ({}));
+      alert('保存失败：' + formatApiError(body));
+    }
+  }
+
+  async function deleteBookmark(id) {
+    if (!confirm('确定要删除这条书签吗？')) return;
+    const resp = await fetch(`/api/bookmarks/${id}/`, {
+      method : 'DELETE',
+      headers: { 'X-CSRFToken': getCsrf() },
+    });
+    if (resp.ok) { location.reload(); }
+    else {
+      const body = await resp.json().catch(() => ({}));
+      alert('删除失败：' + formatApiError(body));
+    }
+  }
+
+  function formatApiError(body) {
+    if (!body || !Object.keys(body).length) return '未知错误';
+    if (body.detail) return body.detail;
+    return Object.entries(body)
+      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+      .join('\n');
+  }
+  // ────────────────────────────────────────────────────────
+
+  // ── 标签管理 ─────────────────────────────────────────────
+  let _editingTagId = null;
+  let _tagModalDirty = false;
+
+  async function openTagModal() {
+    _editingTagId = null;
+    _tagModalDirty = false;
+    document.getElementById('tag-modal').classList.add('open');
+    await loadTagList();
+    startAddTag();
+  }
+
+  function closeTagModal() {
+    document.getElementById('tag-modal').classList.remove('open');
+    if (_tagModalDirty) location.reload();
+  }
+
+  async function loadTagList() {
+    const list = document.getElementById('tag-list');
+    list.innerHTML = '<span style="color:var(--text-hint);font-size:.85rem">加载中…</span>';
+    const resp = await fetch('/api/tags/');
+    if (!resp.ok) { list.innerHTML = '<span style="color:#e74c3c">加载失败</span>'; return; }
+    const tags = await resp.json();
+    if (!tags.length) {
+      list.innerHTML = '<span style="color:var(--text-hint);font-size:.85rem">暂无标签</span>';
+      return;
+    }
+    list.innerHTML = tags.map(t => `
+      <div class="tag-mgmt-item" id="tag-item-${t.id}">
+        <div class="color-dot" style="background:${t.color || 'var(--bg-tag)'}"></div>
+        <div class="tag-mgmt-info">
+          <div class="tag-mgmt-name">${escHtml(t.name)}</div>
+          <div class="tag-mgmt-slug">${escHtml(t.slug)}</div>
+        </div>
+        <div class="tag-mgmt-actions">
+          <button class="action-btn" onclick="startEditTag(${t.id},'${escHtml(t.name)}','${escHtml(t.slug)}','${t.color||''}')">✏</button>
+          <button class="action-btn del" onclick="deleteTag(${t.id})">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function startAddTag() {
+    _editingTagId = null;
+    document.getElementById('tag-form-title').textContent = '新增标签';
+    document.getElementById('tf-name').value = '';
+    document.getElementById('tf-slug').value = '';
+    document.getElementById('tf-color').value = '';
+    document.getElementById('tf-color-picker').value = '#6B7280';
+  }
+
+  function startEditTag(id, name, slug, color) {
+    _editingTagId = id;
+    document.getElementById('tag-form-title').textContent = '编辑标签';
+    document.getElementById('tf-name').value = name;
+    document.getElementById('tf-slug').value = slug;
+    document.getElementById('tf-color').value = color;
+    document.getElementById('tf-color-picker').value = color || '#4f6ef7';
+    document.getElementById('tf-name').focus();
+  }
+
+  async function saveTag() {
+    const name  = document.getElementById('tf-name').value.trim();
+    const slug  = document.getElementById('tf-slug').value.trim();
+    const color = document.getElementById('tf-color').value.trim();
+    if (!name || !slug) { alert('名称和 Slug 不能为空'); return; }
+
+    const payload = { name, slug, ...(color ? { color } : { color: null }) };
+    const url    = _editingTagId ? `/api/tags/${_editingTagId}/` : '/api/tags/';
+    const method = _editingTagId ? 'PATCH' : 'POST';
+
+    const resp = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+      body: JSON.stringify(payload),
+    });
+
+    if (resp.ok) {
+      _tagModalDirty = true;
+      await loadTagList();
+      startAddTag();
+    } else {
+      const body = await resp.json().catch(() => ({}));
+      alert('保存失败：' + formatApiError(body));
+    }
+  }
+
+  async function deleteTag(id) {
+    if (!confirm('确定删除该标签？已关联的书签将失去此标签。')) return;
+    const resp = await fetch(`/api/tags/${id}/`, {
+      method: 'DELETE',
+      headers: { 'X-CSRFToken': getCsrf() },
+    });
+    if (resp.ok) {
+      _tagModalDirty = true;
+      if (_editingTagId === id) startAddTag();
+      await loadTagList();
+    } else {
+      alert('删除失败');
+    }
+  }
+
+  function syncColorPicker() {
+    const val = document.getElementById('tf-color').value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+      document.getElementById('tf-color-picker').value = val;
+    }
+  }
+
+  // 自动从名称生成 slug（ASCII 字符时有效）
+  document.getElementById('tf-name').addEventListener('input', function () {
+    if (_editingTagId) return; // 编辑时不自动覆盖
+    const slug = this.value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+    if (slug) document.getElementById('tf-slug').value = slug;
+  });
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  // ─────────────────────────────────────────────────────────
+
+  // 响应式每页数量：每页固定 3 行，列数由网格宽度决定（每列最小 260px）
+  function calcPerPage() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return null;
+    const cols = Math.max(1, Math.floor(grid.offsetWidth / 260));
+    return cols * 3;
+  }
+
+  function applyPerPage() {
+    const wanted = calcPerPage();
+    if (!wanted) return;
+    const params = new URLSearchParams(window.location.search);
+    const current = parseInt(params.get('per_page')) || 15;
+    if (wanted !== current) {
+      params.set('per_page', wanted);
+      params.set('page', '1');
+      window.location.replace('?' + params.toString());
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', applyPerPage);
+
+  let _resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(applyPerPage, 300);
+  });
+</script>
+</body>
+</html>
