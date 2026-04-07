@@ -30,6 +30,12 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost'] + os.environ.get('ALLOWED_HOSTS', '').split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{host}' for host in os.environ.get('ALLOWED_HOSTS', '').split(',') if host
+] + [
+    f'http://{host}' for host in os.environ.get('ALLOWED_HOSTS', '').split(',') if host
+]
+
 
 # Application definition
 

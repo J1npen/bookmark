@@ -851,7 +851,7 @@ async function saveBookmark() {
     const wanted = calcPerPage();
     if (!wanted) return;
     const params = new URLSearchParams(window.location.search);
-    const current = parseInt(params.get('per_page')) || 15;
+    const current = parseInt(params.get('per_page')) || 21;
     if (wanted !== current) {
       params.set('per_page', wanted);
       params.set('page', '1');

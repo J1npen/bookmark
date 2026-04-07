@@ -32,10 +32,10 @@ def index(request):
         queryset = queryset.filter(bookmarktags__tag__slug=tag_slug)
 
     try:
-        per_page = int(request.GET.get('per_page', 15))
+        per_page = int(request.GET.get('per_page', 21))
         per_page = max(3, min(per_page, 60))
     except (ValueError, TypeError):
-        per_page = 15
+        per_page = 21
 
     paginator  = Paginator(queryset, per_page)
     page_obj   = paginator.get_page(request.GET.get('page', 1))
