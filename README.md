@@ -1,9 +1,10 @@
 # Bookmark
 
-个人书签管理工具，基于 Django + Django REST Framework 构建，支持标签分类、关键词搜索和访问统计。
+个人书签管理工具，基于 Django + Django REST Framework 构建，支持多用户隔离、标签分类、关键词搜索和访问统计。
 
 ## 功能
 
+- 多用户数据隔离：每个账户独立管理自己的书签与标签
 - 书签增删改查，支持收藏星标、可访问状态标记
 - 标签管理（增删改查），支持自定义颜色
 - 按标签筛选 / 关键词搜索（标题、描述、全文）
@@ -39,17 +40,55 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env，填入 SECRET_KEY 和数据库信息
 
-# 5. 启动开发服务器
+# 5. 初始化数据库（Django 内置表）
+python manage.py migrate
+
+# 6. 启动开发服务器
 python manage.py runserver
 ```
 
-访问 http://127.0.0.1:8000
+访问 http://127.0.0.1:8000，使用 Django 管理员账户登录。
+
+### 数据库表
+
+所有业务表需手动在 MySQL 中创建（Django 不管理这些表的 schema）：
+
+```sql
+-- 书签
+CREATE TABLE bookmarks ( ... );
+-- 标签
+CREATE TABLE tags ( ... );
+-- 书签与标签关联
+CREATE TABLE bookmark_tags (
+    bookmark_id INT NOT NULL,
+    tag_id      INT NOT NULL,
+    PRIMARY KEY (bookmark_id, tag_id)
+);
+-- 用户与书签关联
+CREATE TABLE user_bookmarks (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT NOT NULL,
+    bookmark_id INT NOT NULL,
+    UNIQUE KEY unique_user_bookmark (user_id, bookmark_id),
+    FOREIGN KEY (user_id)     REFERENCES auth_user(id) ON DELETE CASCADE,
+    FOREIGN KEY (bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE
+);
+-- 用户与标签关联
+CREATE TABLE user_tags (
+    id      INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    tag_id  INT NOT NULL,
+    UNIQUE KEY unique_user_tag (user_id, tag_id),
+    FOREIGN KEY (user_id) REFERENCES auth_user(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id)  REFERENCES tags(id) ON DELETE CASCADE
+);
+```
 
 ## 项目结构
 
 ```
 bookmark/
-├── api/          # DRF API（书签、标签 CRUD）
+├── api/          # DRF API（书签、标签 CRUD）及数据模型
 ├── bookmark/     # Django 项目配置
 ├── webpage/      # 服务端渲染前端
 ├── .env.example  # 环境变量模板
@@ -58,13 +97,22 @@ bookmark/
 
 ## API 端点
 
+所有接口需登录后访问（Session 认证）。
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/bookmarks/` | 书签列表（支持过滤参数） |
-| POST | `/api/bookmarks/` | 新建书签 |
-| GET/PATCH/DELETE | `/api/bookmarks/{id}/` | 单条书签操作 |
+| POST | `/api/bookmarks/` | 新建书签（自动关联当前用户） |
+| GET/PATCH/DELETE | `/api/bookmarks/{id}/` | 单条书签操作（DELETE 仅解除关联） |
 | GET | `/api/tags/` | 标签列表 |
-| POST | `/api/tags/` | 新建标签 |
-| GET/PATCH/DELETE | `/api/tags/{id}/` | 单条标签操作 |
+| POST | `/api/tags/` | 新建标签（自动关联当前用户） |
+| GET/PATCH/DELETE | `/api/tags/{id}/` | 单条标签操作（DELETE 仅解除关联） |
 
-书签列表支持的查询参数：`?keyword=`、`?search_in=title\|description\|all`、`?tag=<slug>`、`?favorite=1`、`?is_active=0\|1`
+书签列表支持的查询参数：`?keyword=`、`?search_in=title|description|all`、`?tag=<slug>`、`?favorite=1`、`?is_active=0|1`
+
+## 多用户说明
+
+- 每个用户只能看到与自己关联的书签和标签
+- 超级管理员（`is_superuser`）可查看全部数据
+- "删除"书签或标签仅解除与当前用户的关联，原始数据保留
+- 用户与书签/标签的归属关系可在 Django Admin 中手动管理
