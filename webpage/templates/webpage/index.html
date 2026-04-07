@@ -75,6 +75,11 @@
     padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem;
   }
   #theme-btn:hover { color: var(--accent); border-color: var(--accent); }
+  #logout-btn {
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem;
+  }
+  #logout-btn:hover { color: #e53e3e; border-color: #e53e3e; }
 
   /* 搜索区 */
   .search-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
@@ -312,6 +317,8 @@
     .add-btn { padding: 6px 10px; font-size: 0.8rem; }
     #theme-btn { padding: 6px 8px; font-size: 0; } /* 隐藏文字 */
     #theme-btn::before { content: attr(data-icon); font-size: 1rem; }
+    #logout-btn { padding: 6px 8px; font-size: 0; }
+    #logout-btn::before { content: "⏏"; font-size: 1rem; }
 
     /* 搜索区 */
     .search-wrap { padding: 10px 12px; }
@@ -367,6 +374,10 @@
   <div style="display:flex;gap:8px;align-items:center">
     <button class="add-btn" onclick="openCreateModal()">＋ 添加书签</button>
     <button id="theme-btn" onclick="toggleTheme()" data-icon="☀">切换夜间模式</button>
+    <form method="post" action="{% url 'logout' %}" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" id="logout-btn">退出登录</button>
+    </form>
   </div>
 </div>
 

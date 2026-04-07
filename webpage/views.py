@@ -1,11 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 from django.db.models import Q
 from api.models import Bookmarks, Tags, BookmarkTags
 from django.core.paginator import Paginator
 from django.utils import timezone
 
+@login_required
 def index(request):
     filter_keyword = request.GET.get('keyword', '').strip()
     tag_slug      = request.GET.get('tag', '').strip()
@@ -48,6 +50,7 @@ def index(request):
         'per_page' : str(per_page),
     })
 
+@login_required
 def bookmark_visit(request, pk):
     """记录点击次数并跳转"""
     bookmark = get_object_or_404(Bookmarks, pk=pk)
