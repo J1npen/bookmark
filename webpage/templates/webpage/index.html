@@ -296,6 +296,17 @@
   }
   .btn-new-tag:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* 当前标签提示（仅移动端） */
+  .tag-current-hint { display: none; }
+  @media (max-width: 600px) {
+    .tag-current-hint {
+      display: block; font-size: 0.82rem; color: var(--text-muted);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 10px; margin-bottom: 14px;
+    }
+    .tag-current-hint strong { color: var(--text-main); }
+  }
+
   /* ── 移动端 / iPhone Safari 专项适配 ─────────────────────── */
 
   /* 消除 iOS/Android 点击高亮蓝色闪光 */
@@ -426,6 +437,12 @@
   {% endfor %}
   <button class="tag-mgmt-btn" onclick="openTagModal()">⚙ 管理标签</button>
 </div>
+
+{% if tag_slug %}
+<div class="tag-current-hint">
+  当前查看：{% for tag in all_tags %}{% if tag.slug == tag_slug %}<strong>{{ tag.name }}</strong>{% endif %}{% endfor %}（{{ page_obj.paginator.count }} 条）
+</div>
+{% endif %}
 
 <!-- 卡片 -->
 {% if page_obj %}
