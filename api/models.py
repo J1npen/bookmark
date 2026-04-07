@@ -5,6 +5,7 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
+from django.conf import settings
 from django.db import models
 
 
@@ -48,3 +49,25 @@ class Tags(models.Model):
         managed = False
         db_table = 'tags'
         db_table_comment = '书签标签'
+
+
+class UserBookmarks(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING)
+    bookmark = models.ForeignKey(Bookmarks, models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'user_bookmarks'
+        db_table_comment = '用户与书签的关联表'
+        unique_together = [('user', 'bookmark')]
+
+
+class UserTags(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING)
+    tag = models.ForeignKey(Tags, models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'user_tags'
+        db_table_comment = '用户与标签的关联表'
+        unique_together = [('user', 'tag')]

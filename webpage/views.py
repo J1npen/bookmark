@@ -13,9 +13,16 @@ def index(request):
     tag_slug      = request.GET.get('tag', '').strip()
     search_in     = request.GET.get('search_in', 'title')  # title | description | all
 
-    queryset = Bookmarks.objects.prefetch_related(
-        'bookmarktags_set__tag'
-    ).order_by('-id')
+    if request.user.is_superuser:
+        queryset = Bookmarks.objects.prefetch_related(
+            'bookmarktags_set__tag'
+        ).order_by('-id')
+    else:
+        queryset = Bookmarks.objects.filter(
+            userbookmarks__user=request.user
+        ).prefetch_related(
+            'bookmarktags_set__tag'
+        ).order_by('-id')
 
     if filter_keyword:
         if search_in == 'description':
@@ -39,7 +46,10 @@ def index(request):
 
     paginator  = Paginator(queryset, per_page)
     page_obj   = paginator.get_page(request.GET.get('page', 1))
-    all_tags   = Tags.objects.all().order_by('name')
+    if request.user.is_superuser:
+        all_tags = Tags.objects.all().order_by('name')
+    else:
+        all_tags = Tags.objects.filter(usertags__user=request.user).order_by('name')
 
     return render(request, 'webpage/index.html', {
         'page_obj' : page_obj,
@@ -53,7 +63,10 @@ def index(request):
 @login_required
 def bookmark_visit(request, pk):
     """记录点击次数并跳转"""
-    bookmark = get_object_or_404(Bookmarks, pk=pk)
+    if request.user.is_superuser:
+        bookmark = get_object_or_404(Bookmarks, pk=pk)
+    else:
+        bookmark = get_object_or_404(Bookmarks, pk=pk, userbookmarks__user=request.user)
     Bookmarks.objects.filter(pk=pk).update(
         visit_count=bookmark.visit_count + 1,
         last_visit=timezone.now()

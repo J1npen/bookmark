@@ -1,8 +1,9 @@
 from django.http import HttpResponse
 from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 from .serializers import BookmarkSerializer, TagSerializer
-from .models import Bookmarks, Tags, BookmarkTags
+from .models import Bookmarks, Tags, BookmarkTags, UserBookmarks, UserTags
 from django.db.models import Q
 
 def index(request):
@@ -20,9 +21,16 @@ class BookmarkViewSet(viewsets.ModelViewSet):
       ?search_in=title|description|all  — 搜索范围（默认 title）
     """
     serializer_class = BookmarkSerializer
-    
+
     def get_queryset(self):
-        qs = Bookmarks.objects.order_by('-created_at')
+        user = self.request.user
+        if user.is_superuser:
+            qs = Bookmarks.objects.order_by('-created_at')
+        else:
+            qs = Bookmarks.objects.filter(
+                userbookmarks__user=user
+            ).order_by('-created_at')
+
         p = self.request.query_params
 
         if (favorite := p.get('favorite')) is not None:
@@ -46,10 +54,31 @@ class BookmarkViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(title__icontains=keyword)
 
         return qs.distinct()
+
+    def perform_create(self, serializer):
+        bookmark = serializer.save()
+        UserBookmarks.objects.create(user=self.request.user, bookmark=bookmark)
+
+    def destroy(self, request, *args, **kwargs):
+        bookmark = self.get_object()
+        UserBookmarks.objects.filter(user=request.user, bookmark=bookmark).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 class TagViewSet(viewsets.ModelViewSet):
     """标签 CRUD API"""
-    # ModelViewSet = 帮你把"操作一张数据库表"的所有标准接口（CURD）都写好了，
-    # 你只需要告诉它用哪个 Model（queryset） 和用哪个 Serializer，其余按需覆盖即可。
     serializer_class = TagSerializer
-    queryset = Tags.objects.all().order_by('name')
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Tags.objects.all().order_by('name')
+        return Tags.objects.filter(usertags__user=user).order_by('name')
+
+    def perform_create(self, serializer):
+        tag = serializer.save()
+        UserTags.objects.create(user=self.request.user, tag=tag)
+
+    def destroy(self, request, *args, **kwargs):
+        tag = self.get_object()
+        UserTags.objects.filter(user=request.user, tag=tag).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
