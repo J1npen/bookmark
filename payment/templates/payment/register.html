@@ -152,6 +152,20 @@
     margin-bottom: 1.25rem;
   }
   .notice-pending a { color: inherit; font-weight: 500; }
+  .btn-query {
+    display: block;
+    width: 100%;
+    padding: .5rem .75rem;
+    background: transparent;
+    color: inherit;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    font-size: .8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-query:hover { opacity: .75; }
   [data-theme="dark"] .notice-pending {
     background: #2d1f00;
     border-color: #78350f;
@@ -192,9 +206,17 @@
     <div class="price-note">通过支付宝安全支付</div>
   </div>
 
-  {% if has_pending_order %}
+  {% if has_pending_order or query_error %}
   <div class="notice-pending">
-    您有一笔正在处理的订单。如果已在支付宝完成付款，请<a href="">刷新本页</a>继续注册。
+    {% if query_error %}
+      {{ query_error }}
+    {% else %}
+      您有一笔正在处理的订单。如果已在支付宝完成付款，请点击下方按钮验证。
+    {% endif %}
+    <form method="post" action="{% url 'payment:query_order' %}" style="margin-top:.6rem">
+      {% csrf_token %}
+      <button type="submit" class="btn-query">已完成付款，验证支付状态</button>
+    </form>
   </div>
   {% endif %}
 

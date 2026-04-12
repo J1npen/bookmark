@@ -170,6 +170,65 @@ def payment_notify(request):
     return HttpResponse('success')
 
 
+# ── 主动查询支付宝交易状态（补单）────────────────────────────────────────────
+
+def query_order(request):
+    """主动查询支付宝交易状态，用于异步通知未到达时的补单。"""
+    if request.method != 'POST':
+        return redirect('payment:register_info')
+
+    out_trade_no = request.session.get('pending_out_trade_no')
+    if not out_trade_no:
+        return render(request, 'payment/register.html', {
+            'amount': PAYMENT_AMOUNT,
+            'has_pending_order': False,
+            'query_error': '没有待处理的订单，请重新发起支付。',
+        })
+
+    try:
+        order = PaymentOrder.objects.get(out_trade_no=out_trade_no)
+    except PaymentOrder.DoesNotExist:
+        del request.session['pending_out_trade_no']
+        return render(request, 'payment/register.html', {
+            'amount': PAYMENT_AMOUNT,
+            'has_pending_order': False,
+            'query_error': '订单记录不存在，请重新发起支付。',
+        })
+
+    # notify 已经到达，直接跳转（register_info 会渲染注册表单）
+    if order.status in ('paid', 'registered'):
+        return redirect('payment:register_info')
+
+    # 调用支付宝 trade.query 接口
+    try:
+        alipay = _get_alipay()
+        result = alipay.api_alipay_trade_query(out_trade_no=out_trade_no)
+    except Exception:
+        return render(request, 'payment/register.html', {
+            'amount': PAYMENT_AMOUNT,
+            'has_pending_order': True,
+            'query_error': '查询支付宝时发生错误，请稍后再试。',
+        })
+
+    trade_status = result.get('trade_status', '')
+    if trade_status in ('TRADE_SUCCESS', 'TRADE_FINISHED'):
+        trade_no = result.get('trade_no', '')
+        PaymentOrder.objects.filter(
+            out_trade_no=out_trade_no, status='pending'
+        ).update(
+            status='paid',
+            trade_no=trade_no,
+            paid_at=timezone.now(),
+        )
+        return redirect('payment:register_info')
+
+    return render(request, 'payment/register.html', {
+        'amount': PAYMENT_AMOUNT,
+        'has_pending_order': True,
+        'query_error': '支付宝尚未确认付款，请稍候再试，或检查支付宝账单确认是否已扣款。',
+    })
+
+
 # ── 提交注册表单 ──────────────────────────────────────────────────────────────
 
 def do_register(request):

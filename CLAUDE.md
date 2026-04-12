@@ -11,24 +11,51 @@ A Django bookmark manager with three apps:
 
 Database: MySQL (`bookmark_v2` on 127.0.0.1:3306). All models use `managed = False` — schema changes must be applied directly in MySQL, never via Django migrations.
 
+## Environment Setup
+
+Settings are loaded from `.env` in the project root. Required variables:
+
+```
+SECRET_KEY=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_HOST=127.0.0.1   # optional, default 127.0.0.1
+DB_PORT=3306         # optional, default 3306
+DEBUG=True           # optional, default False
+ALLOWED_HOSTS=       # optional, comma-separated extra hosts
+```
+
+## Infrastructure
+
+### Reverse Proxy
+- **Caddy** runs as a Docker container for reverse proxying
+- Caddyfile is mounted at `/root/caddy/Caddyfile`
+- Static files are served directly by Caddy from `/root/bookmark/staticfiles`
+- Note: `/root` requires `o+x` permission so the Caddy container can traverse into subdirectories
+
+### Application Server
+- **Gunicorn** runs via `bookmark.service` (systemd), binding to `0.0.0.0:8000`
+
 ## Commands
 
 ```bash
-# Activate virtual environment (Windows)
-venv\Scripts\activate
+# Activate virtual environment
+source venv/bin/activate        # Linux/macOS
+venv\Scripts\activate           # Windows
 
 # Run development server
 python manage.py runserver
 
-# Run all tests
-python manage.py test
-
-# Run tests for a specific app
-python manage.py test api
-python manage.py test webpage
+# Run tests
+python manage.py test           # all
+python manage.py test api       # single app
 
 # Apply migrations (for Django-managed models only, e.g. auth, sessions)
 python manage.py migrate
+
+# Collect static files (production)
+python manage.py collectstatic
 ```
 
 ## Architecture
@@ -42,7 +69,11 @@ python manage.py migrate
 - `/payment/return/` → sync callback; verifies signature, marks order `paid`
 - `/payment/notify/` → async callback (CSRF-exempt); marks order `paid`
 - `/payment/do-register/` → validates form, creates `User`, marks order `registered`, logs in
+- `/accounts/login/` → Django built-in `LoginView` with template `registration/login.html`
 - `/admin/` → Django admin
+
+### Authentication
+All `webpage` views use `@login_required` (redirects to `/accounts/login/`). The DRF API uses `SessionAuthentication` + `IsAuthenticated` — all API endpoints also require login.
 
 ### Data Model
 Six tables, all `managed = False`:
@@ -50,6 +81,8 @@ Six tables, all `managed = False`:
 - `payment/models.py`: `PaymentOrder` — columns `out_trade_no`, `trade_no`, `amount`, `status` (`pending`→`paid`→`registered`), `created_at`, `paid_at`
 
 MySQL DDL for `PaymentOrder` is in the model's docstring.
+
+The `webpage` app has its own `models.py` but it is empty — it imports all models from `api.models`.
 
 ### Per-User Data Isolation
 Every view and viewset filters data by the authenticated user via `UserBookmarks` and `UserTags`. Superusers bypass all filters and see everything. "Deleting" a bookmark or tag only removes the `UserBookmarks`/`UserTags` association — the underlying record is never deleted.

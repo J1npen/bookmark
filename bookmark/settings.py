@@ -146,6 +146,8 @@ REST_FRAMEWORK = {
     ],
 }
 
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 ALIPAY_CONFIG = {
     "appid": os.environ["ALIPAY_APP_ID"],
     "app_private_key": os.environ["ALIPAY_PRIVATE_KEY"],
