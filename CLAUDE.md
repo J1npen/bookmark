@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Django bookmark manager with two apps:
+A Django bookmark manager with three apps:
 - **`api`** — Django REST Framework API for bookmarks and tags
 - **`webpage`** — Server-rendered HTML frontend for browsing bookmarks
+- **`payment`** — Alipay-based paid registration flow (¥5.00 one-time fee)
 
 Database: MySQL (`bookmark_v2` on 127.0.0.1:3306). All models use `managed = False` — schema changes must be applied directly in MySQL, never via Django migrations.
 
@@ -36,15 +37,19 @@ python manage.py migrate
 - `/` → `webpage.views.index` — paginated bookmark list with filtering
 - `/<pk>/visit/` → `webpage.views.bookmark_visit` — increments `visit_count` and redirects to the URL
 - `/api/` → DRF router with `BookmarkViewSet` and `TagViewSet`
+- `/payment/register/` → registration info page with payment CTA
+- `/payment/create-order/` → creates `PaymentOrder` and redirects to Alipay gateway
+- `/payment/return/` → sync callback; verifies signature, marks order `paid`
+- `/payment/notify/` → async callback (CSRF-exempt); marks order `paid`
+- `/payment/do-register/` → validates form, creates `User`, marks order `registered`, logs in
 - `/admin/` → Django admin
 
 ### Data Model
-Five tables in `api/models.py` (all `managed = False`):
-- `Bookmarks` — core bookmark data; fields include `is_domestic`, `site_scale`, `is_active`, `is_favorite`, `visit_count`
-- `Tags` — name/slug/color
-- `BookmarkTags` — M2M join table with `CompositePrimaryKey('bookmark_id', 'tag_id')`
-- `UserBookmarks` — maps users → bookmarks (surrogate `id` PK, unique on `user_id+bookmark_id`)
-- `UserTags` — maps users → tags (surrogate `id` PK, unique on `user_id+tag_id`)
+Six tables, all `managed = False`:
+- `api/models.py`: `Bookmarks`, `Tags`, `BookmarkTags` (composite PK), `UserBookmarks`, `UserTags`
+- `payment/models.py`: `PaymentOrder` — columns `out_trade_no`, `trade_no`, `amount`, `status` (`pending`→`paid`→`registered`), `created_at`, `paid_at`
+
+MySQL DDL for `PaymentOrder` is in the model's docstring.
 
 ### Per-User Data Isolation
 Every view and viewset filters data by the authenticated user via `UserBookmarks` and `UserTags`. Superusers bypass all filters and see everything. "Deleting" a bookmark or tag only removes the `UserBookmarks`/`UserTags` association — the underlying record is never deleted.
@@ -61,6 +66,11 @@ DRF is configured with `SessionAuthentication` and `IsAuthenticated` globally (s
 
 ### Frontend Layer (`webpage/`)
 `webpage/views.index` mirrors the API filtering logic and renders `webpage/templates/webpage/index.html` with pagination (default 21 per page, capped 3–60). The tag sidebar (`all_tags`) is also filtered by the current user.
+
+### Payment Layer (`payment/`)
+Uses the `python-alipay-sdk` (`alipay` package). Config is read from `settings.ALIPAY_CONFIG` which is populated from environment variables. The `_get_alipay()` helper in `payment/views.py` wraps the bare key strings with PEM headers before passing to the SDK.
+
+Session key `pending_out_trade_no` tracks the in-flight order across the redirect loop. The `register_info` view checks this key to show appropriate state (no order / waiting for notify / already paid).
 
 ### Admin (`api/admin.py`)
 `UserBookmarksAdmin` and `UserTagsAdmin` are registered, allowing manual management of user–bookmark and user–tag associations. Admin does not support models with `CompositePrimaryKey` — use a surrogate `id` for any new join tables intended to appear in admin.
