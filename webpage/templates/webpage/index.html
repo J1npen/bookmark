@@ -646,8 +646,11 @@
   }
 
   function openCreateModal() {
+    // 初始化逻辑
     _editingId = null;
+    // 该弹窗既用于新增也用于编辑
     document.getElementById('modal-title').textContent = '添加书签';
+    // 清空上次操作的旧数据
     ['f-url','f-title','f-description','f-favicon','f-scale'].forEach(id => {
       document.getElementById(id).value = '';
     });

@@ -22,3 +22,6 @@ db.sqlite3
 *.swp
 
 tmp
+
+# Claude Code
+.claude/

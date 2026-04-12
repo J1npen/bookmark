@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'api',
     'rest_framework',
     'webpage',
+    'payment',
 ]
 
 MIDDLEWARE = [
@@ -143,4 +144,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+}
+
+ALIPAY_CONFIG = {
+    "appid": os.environ["ALIPAY_APP_ID"],
+    "app_private_key": os.environ["ALIPAY_PRIVATE_KEY"],
+    "alipay_public_key": os.environ["ALIPAY_PUBLIC_KEY"],
+    "sandbox": os.environ.get("ALIPAY_SANDBOX", "False") == "True",
 }

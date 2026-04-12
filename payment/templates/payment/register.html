@@ -1,0 +1,217 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>注册账号 — 书签</title>
+<link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+<link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+<link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+<style>
+  :root {
+    --bg-page:   #f5f6fa;
+    --bg-card:   #ffffff;
+    --text-main: #1a1a2e;
+    --text-muted:#666;
+    --border:    #e2e4ec;
+    --accent:    #4f6ef7;
+    --accent-h:  #3a57d6;
+    --input-bg:  #ffffff;
+    --alipay:    #1677ff;
+    --alipay-h:  #0958d9;
+  }
+  [data-theme="dark"],
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) {
+      --bg-page:   #0f1117;
+      --bg-card:   #1c1e27;
+      --text-main: #e8eaf6;
+      --text-muted:#9ea3b8;
+      --border:    #2e3145;
+      --input-bg:  #1c1e27;
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) {
+      --bg-page:   #0f1117;
+      --bg-card:   #1c1e27;
+      --text-main: #e8eaf6;
+      --text-muted:#9ea3b8;
+      --border:    #2e3145;
+      --input-bg:  #1c1e27;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg-page);
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 380px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: .875rem;
+    margin-bottom: 1.5rem;
+  }
+  .price-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  [data-theme="dark"] .price-box,
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .price-box {
+      background: #172554;
+      border-color: #1d4ed8;
+    }
+  }
+  .price-label {
+    font-size: .875rem;
+    color: var(--text-muted);
+    margin-bottom: .25rem;
+  }
+  .price-amount {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--alipay);
+  }
+  .price-note {
+    font-size: .75rem;
+    color: var(--text-muted);
+    margin-top: .25rem;
+  }
+  .feature-list {
+    list-style: none;
+    margin-bottom: 1.5rem;
+    font-size: .875rem;
+    color: var(--text-muted);
+  }
+  .feature-list li {
+    padding: .3rem 0;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .feature-list li::before {
+    content: "✓";
+    color: #22c55e;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .btn-pay {
+    display: block;
+    width: 100%;
+    padding: .75rem;
+    background: var(--alipay);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+    text-align: center;
+  }
+  .btn-pay:hover { background: var(--alipay-h); }
+  .alipay-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .notice-pending {
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    border-radius: 8px;
+    padding: .65rem .9rem;
+    font-size: .875rem;
+    margin-bottom: 1.25rem;
+  }
+  .notice-pending a { color: inherit; font-weight: 500; }
+  [data-theme="dark"] .notice-pending {
+    background: #2d1f00;
+    border-color: #78350f;
+    color: #fcd34d;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .notice-pending {
+      background: #2d1f00;
+      border-color: #78350f;
+      color: #fcd34d;
+    }
+  }
+  .back-link {
+    display: block;
+    text-align: center;
+    margin-top: 1rem;
+    font-size: .875rem;
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--accent); }
+</style>
+<script>
+  (function(){
+    var s = localStorage.getItem('theme');
+    if (s) document.documentElement.setAttribute('data-theme', s);
+  })();
+</script>
+</head>
+<body>
+<div class="card">
+  <h1>书签</h1>
+  <p class="subtitle">注册新账号</p>
+
+  <div class="price-box">
+    <div class="price-label">一次性注册费</div>
+    <div class="price-amount">¥ {{ amount }}</div>
+    <div class="price-note">通过支付宝安全支付</div>
+  </div>
+
+  {% if has_pending_order %}
+  <div class="notice-pending">
+    您有一笔正在处理的订单。如果已在支付宝完成付款，请<a href="">刷新本页</a>继续注册。
+  </div>
+  {% endif %}
+
+  <ul class="feature-list">
+    <li>永久账号，无续费</li>
+    <li>个人书签收藏与管理</li>
+    <li>标签分类与快速筛选</li>
+  </ul>
+
+  <form method="post" action="{% url 'payment:create_order' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn-pay">
+      <span class="alipay-logo">前往支付宝支付 ¥{{ amount }}</span>
+    </button>
+  </form>
+
+  <a href="{% url 'login' %}" class="back-link">← 返回登录</a>
+</div>
+</body>
+</html>
