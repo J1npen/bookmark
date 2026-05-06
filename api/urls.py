@@ -11,5 +11,6 @@ router.register('tags', views.TagViewSet, basename='api-tag')
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('describe/', views.describe_url, name='describe-url'),
     path('', include(router.urls)),
 ]

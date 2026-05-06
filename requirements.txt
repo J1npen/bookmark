@@ -5,3 +5,6 @@ mysqlclient==2.2.8
 python-dotenv==1.2.2
 sqlparse==0.5.5
 tzdata==2025.3
+httpx
+beautifulsoup4
+langchain-openai

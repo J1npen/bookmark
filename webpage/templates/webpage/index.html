@@ -550,7 +550,15 @@
     <div class="modal-body">
       <div class="field-group">
         <label>URL *</label>
-        <input id="f-url" type="url" placeholder="https://…">
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input id="f-url" type="url" placeholder="https://…" style="flex:1">
+          <button type="button" id="fetch-desc-btn" onclick="fetchDescription()"
+                  style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;
+                         background:var(--bg-card);color:var(--text-muted);cursor:pointer;
+                         font-size:0.82rem;white-space:nowrap;flex-shrink:0">
+            获取描述
+          </button>
+        </div>
       </div>
       <div class="field-group">
         <label>标题 *</label>
@@ -857,6 +865,26 @@ async function saveBookmark() {
     const slug = this.value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
     if (slug) document.getElementById('tf-slug').value = slug;
   });
+
+  async function fetchDescription() {
+    const url = document.getElementById('f-url').value.trim();
+    if (!url) { alert('请先填写 URL'); return; }
+    const btn = document.getElementById('fetch-desc-btn');
+    btn.textContent = '获取中…';
+    btn.disabled = true;
+    try {
+      const resp = await fetch('/api/describe/?url=' + encodeURIComponent(url));
+      const data = await resp.json();
+      if (data.description) {
+        document.getElementById('f-description').value = data.description;
+      }
+    } catch (e) {
+      // 静默失败，不影响保存
+    } finally {
+      btn.textContent = '获取描述';
+      btn.disabled = false;
+    }
+  }
 
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');

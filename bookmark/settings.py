@@ -148,6 +148,9 @@ REST_FRAMEWORK = {
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com')
+
 ALIPAY_CONFIG = {
     "appid": os.environ["ALIPAY_APP_ID"],
     "app_private_key": os.environ["ALIPAY_PRIVATE_KEY"],
