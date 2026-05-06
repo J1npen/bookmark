@@ -13,6 +13,65 @@ def index(request):
 
 
 @api_view(['GET'])
+def fetch_url_meta(request):
+    url = request.query_params.get('url', '').strip()
+    if not url:
+        return Response({'title': '', 'favicon_url': ''})
+    try:
+        import httpx
+        import re
+        import html as html_mod
+        from urllib.parse import urlparse, urljoin
+
+        chunks = []
+        total = 0
+        parsed = urlparse(url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
+
+        with httpx.Client(timeout=10, follow_redirects=True) as client:
+            with client.stream('GET', url, headers={'User-Agent': 'Mozilla/5.0'}) as resp:
+                for chunk in resp.iter_bytes():
+                    chunks.append(chunk)
+                    total += len(chunk)
+                    if total >= 20 * 1024:
+                        break
+
+            raw = b''.join(chunks).decode('utf-8', errors='replace')
+
+            head_end = re.search(r'</head>', raw, re.IGNORECASE)
+            head = raw[:head_end.start()] if head_end else raw
+
+            m = re.search(r'<title[^>]*>(.*?)</title>', head, re.IGNORECASE | re.DOTALL)
+            title = html_mod.unescape(m.group(1).strip()) if m else ''
+
+            # 1st: <link rel="icon"> in <head>
+            favicon_url = ''
+            for attrs in re.findall(r'<link([^>]+)>', head, re.IGNORECASE):
+                rel_m  = re.search(r'rel=["\']([^"\']+)["\']', attrs, re.IGNORECASE)
+                href_m = re.search(r'href=["\']([^"\']+)["\']', attrs, re.IGNORECASE)
+                if rel_m and href_m and 'icon' in rel_m.group(1).lower():
+                    favicon_url = urljoin(url, href_m.group(1))
+                    break
+
+            # 2nd: HEAD /favicon.ico
+            if not favicon_url:
+                try:
+                    r = client.head(urljoin(base, '/favicon.ico'), timeout=5)
+                    if r.status_code < 400:
+                        favicon_url = urljoin(base, '/favicon.ico')
+                except Exception:
+                    pass
+
+        # 3rd: Google favicon service
+        if not favicon_url:
+            favicon_url = f'https://www.google.com/s2/favicons?domain={parsed.netloc}&sz=32'
+
+        return Response({'title': title, 'favicon_url': favicon_url})
+    except Exception:
+        return Response({'title': '', 'favicon_url': ''})
+
+
+@api_view(['GET'])
 def describe_url(request):
     url = request.query_params.get('url', '').strip()
     if not url:

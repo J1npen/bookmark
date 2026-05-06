@@ -886,6 +886,20 @@ async function saveBookmark() {
     }
   }
 
+  document.getElementById('f-url').addEventListener('blur', async function () {
+    const url = this.value.trim();
+    if (!url) return;
+    const titleEl   = document.getElementById('f-title');
+    const faviconEl = document.getElementById('f-favicon');
+    if (titleEl.value.trim() && faviconEl.value.trim()) return;
+    try {
+      const resp = await fetch('/api/fetch-url-meta/?url=' + encodeURIComponent(url));
+      const data = await resp.json();
+      if (data.title       && !titleEl.value.trim())   titleEl.value   = data.title;
+      if (data.favicon_url && !faviconEl.value.trim()) faviconEl.value = data.favicon_url;
+    } catch (_) {}
+  });
+
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }

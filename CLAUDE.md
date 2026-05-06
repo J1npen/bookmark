@@ -107,3 +107,7 @@ Session key `pending_out_trade_no` tracks the in-flight order across the redirec
 
 ### Admin (`api/admin.py`)
 `UserBookmarksAdmin` and `UserTagsAdmin` are registered, allowing manual management of user–bookmark and user–tag associations. Admin does not support models with `CompositePrimaryKey` — use a surrogate `id` for any new join tables intended to appear in admin.
+
+
+
+使用中文回复。
