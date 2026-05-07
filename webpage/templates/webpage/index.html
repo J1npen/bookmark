@@ -887,12 +887,13 @@ async function saveBookmark() {
   }
   // ─────────────────────────────────────────────────────────
 
-  // 响应式每页数量：每页固定 3 行，列数由网格宽度决定（每列最小 260px）
+  // 响应式每页数量：移动端单列 10 条，多列时固定 3 行
   function calcPerPage() {
     const grid = document.querySelector('.grid');
     if (!grid) return null;
     const cols = Math.max(1, Math.floor(grid.offsetWidth / 260));
-    return cols * 3;
+    const rows = cols === 1 ? 10 : 3;
+    return cols * rows;
   }
 
   function applyPerPage() {
