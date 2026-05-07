@@ -572,22 +572,7 @@
         <label>Favicon URL</label>
         <input id="f-favicon" type="url" placeholder="https://…/favicon.ico">
       </div>
-      <div class="field-row">
-        <div class="field-group">
-          <label>地域</label>
-          <select id="f-domestic">
-            <option value="1">国内</option>
-            <option value="0">国外</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label>规模</label>
-          <select id="f-scale">
-            <option value="personal">personal</option>
-            <option value="enterprise">enterprise</option>
-          </select>
-        </div>
-      </div>
+
       <div class="field-row" style="gap:20px">
         <label class="toggle-label">
           <input id="f-active" type="checkbox" checked>
@@ -659,10 +644,9 @@
     // 该弹窗既用于新增也用于编辑
     document.getElementById('modal-title').textContent = '添加书签';
     // 清空上次操作的旧数据
-    ['f-url','f-title','f-description','f-favicon','f-scale'].forEach(id => {
+    ['f-url','f-title','f-description','f-favicon'].forEach(id => {
       document.getElementById(id).value = '';
     });
-    document.getElementById('f-domestic').value = '0';
     document.getElementById('f-active').checked = true;
     document.getElementById('f-favorite').checked = false;
     document.querySelectorAll('.tag-check').forEach(cb => cb.checked = false);
@@ -678,8 +662,7 @@
     document.getElementById('f-title').value      = d.title;
     document.getElementById('f-description').value = d.description;
     document.getElementById('f-favicon').value    = d.favicon_url;
-    document.getElementById('f-domestic').value   = d.is_domestic;
-    document.getElementById('f-scale').value      = d.site_scale;
+
     document.getElementById('f-active').checked   = !!d.is_active;
     document.getElementById('f-favorite').checked = !!d.is_favorite;
     const tagIds = (d.tags || []).map(t => t.id);
@@ -703,8 +686,7 @@ async function saveBookmark() {
       url, title,
       description : document.getElementById('f-description').value.trim(),
       favicon_url : document.getElementById('f-favicon').value.trim(),
-      is_domestic : parseInt(document.getElementById('f-domestic').value),
-      site_scale  : document.getElementById('f-scale').value.trim() || 'medium',
+
       is_active   : document.getElementById('f-active').checked   ? 1 : 0,
       is_favorite : document.getElementById('f-favorite').checked ? 1 : 0,
       tag_ids     : [...document.querySelectorAll('.tag-check:checked')].map(cb => parseInt(cb.value)),

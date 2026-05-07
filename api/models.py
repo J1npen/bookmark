@@ -14,8 +14,6 @@ class Bookmarks(models.Model):
     title = models.CharField(max_length=200, db_comment='网站标题')
     description = models.TextField(blank=True, null=True, db_comment='简要描述')
     favicon_url = models.CharField(max_length=512, blank=True, null=True, db_comment='网站图标地址')
-    is_domestic = models.IntegerField(db_comment='地域：1 = 国内，0 = 国外')
-    site_scale = models.CharField(max_length=10, db_comment='网站规模')
     is_active = models.IntegerField(db_comment='是否可访问')
     is_favorite = models.IntegerField(db_comment='收藏星标')
     visit_count = models.PositiveIntegerField(db_comment='点击次数')

@@ -21,7 +21,7 @@ class BookmarkSerializer(serializers.ModelSerializer):
         model = Bookmarks
         fields = [
             'id', 'title', 'url', 'description', 'favicon_url',
-            'is_domestic', 'site_scale', 'is_active', 'is_favorite',
+            'is_active', 'is_favorite',
             'visit_count', 'last_visit', 'created_at', 'updated_at',
             'tags', 'tag_ids',
         ]
