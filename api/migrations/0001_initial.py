@@ -21,8 +21,6 @@ class Migration(migrations.Migration):
                 ('favicon_url', models.CharField(blank=True, db_comment='网站图标地址', max_length=512, null=True)),
                 ('is_domestic', models.IntegerField(db_comment='地域：1 = 国内，0 = 国外')),
                 ('site_scale', models.CharField(db_comment='网站规模', max_length=10)),
-                ('is_active', models.IntegerField(db_comment='是否可访问')),
-                ('is_favorite', models.IntegerField(db_comment='收藏星标')),
                 ('visit_count', models.PositiveIntegerField(db_comment='点击次数')),
                 ('last_visit', models.DateTimeField(blank=True, db_comment='最近访问时间', null=True)),
                 ('created_at', models.DateTimeField()),

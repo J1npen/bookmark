@@ -573,16 +573,6 @@
         <input id="f-favicon" type="url" placeholder="https://…/favicon.ico">
       </div>
 
-      <div class="field-row" style="gap:20px">
-        <label class="toggle-label">
-          <input id="f-active" type="checkbox" checked>
-          <span>可访问</span>
-        </label>
-        <label class="toggle-label">
-          <input id="f-favorite" type="checkbox">
-          <span>收藏星标</span>
-        </label>
-      </div>
       {% if all_tags %}
       <div class="field-group">
         <label>标签</label>
@@ -647,8 +637,6 @@
     ['f-url','f-title','f-description','f-favicon'].forEach(id => {
       document.getElementById(id).value = '';
     });
-    document.getElementById('f-active').checked = true;
-    document.getElementById('f-favorite').checked = false;
     document.querySelectorAll('.tag-check').forEach(cb => cb.checked = false);
     document.getElementById('bm-modal').classList.add('open');
   }
@@ -663,8 +651,6 @@
     document.getElementById('f-description').value = d.description;
     document.getElementById('f-favicon').value    = d.favicon_url;
 
-    document.getElementById('f-active').checked   = !!d.is_active;
-    document.getElementById('f-favorite').checked = !!d.is_favorite;
     const tagIds = (d.tags || []).map(t => t.id);
     document.querySelectorAll('.tag-check').forEach(cb => {
       cb.checked = tagIds.includes(parseInt(cb.value));
@@ -686,9 +672,6 @@ async function saveBookmark() {
       url, title,
       description : document.getElementById('f-description').value.trim(),
       favicon_url : document.getElementById('f-favicon').value.trim(),
-
-      is_active   : document.getElementById('f-active').checked   ? 1 : 0,
-      is_favorite : document.getElementById('f-favorite').checked ? 1 : 0,
       tag_ids     : [...document.querySelectorAll('.tag-check:checked')].map(cb => parseInt(cb.value)),
     };
 
