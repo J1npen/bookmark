@@ -34,19 +34,38 @@
         </template>
       </div>
 
-      <div class="sidebar-footer">
-        <div class="avatar">{{ userInitial }}</div>
-        <div class="user-info">
-          <div class="user-name">{{ auth.username || '用户' }}</div>
-          <div class="user-sub">书签管理器</div>
-        </div>
-        <button class="logout-btn" @click="doLogout" title="退出登录">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
+      <div class="sidebar-footer-wrap" @click.stop>
+        <Transition name="menu-up">
+          <div v-if="footerMenuOpen" class="footer-menu">
+            <button class="footer-menu-item" @click="openSettings">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              设置
+            </button>
+            <div class="footer-menu-sep"></div>
+            <button class="footer-menu-item footer-menu-logout" @click="doLogout">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              退出登录
+            </button>
+          </div>
+        </Transition>
+
+        <div class="sidebar-footer" @click="toggleFooterMenu">
+          <div class="avatar">{{ userInitial }}</div>
+          <div class="user-info">
+            <div class="user-name">{{ auth.username || '用户' }}</div>
+            <div class="user-sub">书签管理器</div>
+          </div>
+          <svg class="footer-chevron" :class="{ open: footerMenuOpen }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"/>
           </svg>
-        </button>
+        </div>
       </div>
     </aside>
 
@@ -160,6 +179,30 @@
     </main>
   </div>
 
+  <!-- ── Settings Modal ── -->
+  <Transition name="fade">
+    <div v-if="showSettings" class="modal-overlay" @click.self="showSettings = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>设置</h2>
+          <button class="modal-close" @click="showSettings = false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-field">
+          <label>每页显示书签数量</label>
+          <input v-model.number="settingsPageSize" type="number" min="1" max="100" placeholder="默认 8" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn" @click="showSettings = false">取消</button>
+          <button class="btn btn-primary modal-save" @click="saveSettings">保存</button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
   <!-- ── Add Bookmark Modal ── -->
   <Transition name="fade">
     <div v-if="showAddForm" class="modal-overlay" @click.self="closeModal">
@@ -244,6 +287,9 @@ const router = useRouter()
 const activeTag = ref('')
 const keyword = ref('')
 const showAddForm = ref(false)
+const showSettings = ref(false)
+const footerMenuOpen = ref(false)
+const settingsPageSize = ref(bmStore.pageSize)
 const searchInput = ref(null)
 const fetching = ref(false)
 const saving = ref(false)
@@ -279,18 +325,47 @@ const latestTime = computed(() => {
 onMounted(async () => {
   await Promise.all([tagStore.load(), bmStore.load()])
   document.addEventListener('keydown', handleKeydown)
+  document.addEventListener('click', handleDocClick)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('click', handleDocClick)
 })
 
 function handleKeydown(e) {
-  if (e.key === 'Escape' && showAddForm.value) closeModal()
+  if (e.key === 'Escape') {
+    if (showAddForm.value) closeModal()
+    else if (showSettings.value) showSettings.value = false
+    else if (footerMenuOpen.value) footerMenuOpen.value = false
+  }
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     e.preventDefault()
     searchInput.value?.focus()
   }
+}
+
+function handleDocClick() {
+  footerMenuOpen.value = false
+}
+
+function toggleFooterMenu() {
+  footerMenuOpen.value = !footerMenuOpen.value
+}
+
+function openSettings() {
+  settingsPageSize.value = bmStore.pageSize
+  footerMenuOpen.value = false
+  showSettings.value = true
+}
+
+function saveSettings() {
+  const size = Math.max(1, Math.min(100, Math.round(settingsPageSize.value) || 8))
+  localStorage.setItem('bm_pageSize', size)
+  bmStore.pageSize = size
+  bmStore.page = 1
+  bmStore.load()
+  showSettings.value = false
 }
 
 function setTag(slug) {
@@ -393,6 +468,7 @@ function openUrl(bm) {
 }
 
 async function doLogout() {
+  footerMenuOpen.value = false
   await auth.logout()
   router.push('/login')
 }
@@ -477,7 +553,7 @@ function timeAgo(dateStr) {
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  padding: 28px 20px;
+  padding: 28px 20px 10px;
   height: calc(100vh - 48px);
   position: sticky;
   top: 24px;
@@ -603,14 +679,74 @@ function timeAgo(dateStr) {
 }
 
 /* ── Sidebar Footer ── */
-.sidebar-footer {
+.sidebar-footer-wrap {
   margin-top: auto;
-  padding-top: 20px;
+  position: relative;
+}
+
+.sidebar-footer {
   border-top: 1px solid var(--glass-border);
+  margin-top: 12px;
+  padding: 14px 8px 10px;
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.2s;
 }
+.sidebar-footer:hover { background: var(--glass-hover); }
+
+.footer-chevron {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+.footer-chevron.open { transform: rotate(180deg); }
+
+.footer-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(18, 12, 28, 0.97);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+
+.footer-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-family: var(--font-sans);
+  color: var(--ink-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+}
+.footer-menu-item:hover { background: var(--glass-hover); color: var(--ink); }
+.footer-menu-logout:hover { color: #ff6b9d; background: rgba(255, 107, 157, 0.08); }
+
+.footer-menu-sep {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 4px 0;
+}
+
+/* menu-up transition */
+.menu-up-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.menu-up-leave-active { transition: opacity 0.14s ease, transform 0.14s ease; }
+.menu-up-enter-from { opacity: 0; transform: translateY(6px); }
+.menu-up-leave-to { opacity: 0; transform: translateY(6px); }
 
 .avatar {
   width: 32px;
@@ -630,19 +766,6 @@ function timeAgo(dateStr) {
 .user-name { font-weight: 500; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-sub { font-size: 11px; color: var(--ink-faint); }
 
-.logout-btn {
-  background: none;
-  border: none;
-  color: var(--ink-faint);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
-  flex-shrink: 0;
-}
-.logout-btn:hover { color: var(--ink); }
 
 /* ── Main ── */
 .main { padding: 8px 12px 48px; }
