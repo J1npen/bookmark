@@ -5,6 +5,7 @@ import http from '../api/http.js'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
+    username: localStorage.getItem('bm_username') || '',
     checked: false,
   }),
   actions: {
@@ -20,12 +21,18 @@ export const useAuthStore = defineStore('auth', {
     },
     async login(username, password) {
       const ok = await apiLogin(username, password)
-      if (ok) this.user = 'authenticated'
+      if (ok) {
+        this.user = 'authenticated'
+        this.username = username
+        localStorage.setItem('bm_username', username)
+      }
       return ok
     },
     async logout() {
       await apiLogout()
       this.user = null
+      this.username = ''
+      localStorage.removeItem('bm_username')
     },
   },
 })
