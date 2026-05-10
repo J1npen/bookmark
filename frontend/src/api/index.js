@@ -52,3 +52,4 @@ export const deleteTag = id => http.delete(`/api/tags/${id}/`)
 
 // 工具
 export const fetchUrlMeta = url => http.get('/api/fetch-url-meta/', { params: { url } })
+export const describeUrl = url => http.get('/api/describe/', { params: { url } })

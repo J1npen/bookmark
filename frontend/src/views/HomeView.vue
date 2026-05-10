@@ -127,6 +127,11 @@
               </div>
             </div>
             <div class="domain">{{ extractDomain(bm.url) }}</div>
+            <button class="card-edit" @click.stop="openEditModal(bm)" title="编辑书签">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
             <button class="card-del" @click.stop="remove(bm.id)" title="删除书签">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -181,7 +186,7 @@
 
   <!-- ── Settings Modal ── -->
   <Transition name="fade">
-    <div v-if="showSettings" class="modal-overlay" @click.self="showSettings = false">
+    <div v-if="showSettings" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
           <h2>设置</h2>
@@ -205,10 +210,10 @@
 
   <!-- ── Add Bookmark Modal ── -->
   <Transition name="fade">
-    <div v-if="showAddForm" class="modal-overlay" @click.self="closeModal">
+    <div v-if="showAddForm" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
-          <h2>新建书签</h2>
+          <h2>{{ editingId ? '编辑书签' : '新建书签' }}</h2>
           <button class="modal-close" @click="closeModal">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -226,10 +231,10 @@
             />
             <button
               class="btn fetch-btn"
-              :disabled="fetching || !form.url"
-              @click="autoFetch"
+              :disabled="describing || !form.url"
+              @click="describe"
             >
-              {{ fetching ? '识别中…' : '自动识别' }}
+              {{ describing ? '生成中…' : '获取描述' }}
             </button>
           </div>
         </div>
@@ -242,6 +247,11 @@
         <div class="modal-field">
           <label>描述 <span class="opt">（可选）</span></label>
           <textarea v-model="form.description" placeholder="简要描述这个网页…" rows="2"></textarea>
+        </div>
+
+        <div class="modal-field">
+          <label>Favicon URL <span class="opt">（可选）</span></label>
+          <input v-model="form.favicon_url" placeholder="https://…/favicon.ico" />
         </div>
 
         <div v-if="tagStore.items.length" class="modal-field">
@@ -263,7 +273,7 @@
         <div class="modal-actions">
           <button class="btn" @click="closeModal">取消</button>
           <button class="btn btn-primary modal-save" :disabled="!form.url || saving" @click="save">
-            {{ saving ? '保存中…' : '保存书签' }}
+            {{ saving ? '保存中…' : (editingId ? '保存修改' : '保存书签') }}
           </button>
         </div>
       </div>
@@ -277,7 +287,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { useBookmarkStore } from '../stores/bookmarks.js'
 import { useTagStore } from '../stores/tags.js'
-import { fetchUrlMeta, visitBookmark } from '../api/index.js'
+import { fetchUrlMeta, describeUrl, updateBookmark, visitBookmark } from '../api/index.js'
 
 const auth = useAuthStore()
 const bmStore = useBookmarkStore()
@@ -292,7 +302,9 @@ const footerMenuOpen = ref(false)
 const settingsPageSize = ref(bmStore.pageSize)
 const searchInput = ref(null)
 const fetching = ref(false)
+const describing = ref(false)
 const saving = ref(false)
+const editingId = ref(null)
 const failedFavicons = reactive({})
 const jumpInput = ref(1)
 
@@ -437,16 +449,48 @@ function autoFetchOnBlur() {
   }
 }
 
+function openEditModal(bm) {
+  editingId.value = bm.id
+  Object.assign(form, {
+    url: bm.url,
+    title: bm.title,
+    description: bm.description || '',
+    favicon_url: bm.favicon_url || '',
+    tagIds: (bm.tags || []).map(t => t.id),
+  })
+  showAddForm.value = true
+}
+
+async function describe() {
+  const url = form.url.trim()
+  if (!url) return
+  describing.value = true
+  try {
+    const res = await describeUrl(url)
+    if (res.data.description) form.description = res.data.description
+  } catch {
+    // ignore
+  } finally {
+    describing.value = false
+  }
+}
+
 async function save() {
   saving.value = true
   try {
-    await bmStore.create({
+    const payload = {
       url: form.url.trim(),
       title: form.title || form.url.trim(),
       description: form.description,
       favicon_url: form.favicon_url,
       tag_ids: form.tagIds,
-    })
+    }
+    if (editingId.value) {
+      await updateBookmark(editingId.value, payload)
+      await bmStore.load()
+    } else {
+      await bmStore.create(payload)
+    }
     closeModal()
   } finally {
     saving.value = false
@@ -455,6 +499,7 @@ async function save() {
 
 function closeModal() {
   showAddForm.value = false
+  editingId.value = null
   Object.assign(form, { url: '', title: '', description: '', tagIds: [], favicon_url: '' })
 }
 
@@ -946,6 +991,7 @@ function timeAgo(dateStr) {
   flex: 1;
 }
 
+.card-edit,
 .card-del {
   opacity: 0;
   background: none;
@@ -960,7 +1006,9 @@ function timeAgo(dateStr) {
   transition: all 0.2s;
   flex-shrink: 0;
 }
+.card:hover .card-edit,
 .card:hover .card-del { opacity: 1; }
+.card-edit:hover { color: #5b8def; background: rgba(91, 141, 239, 0.1); }
 .card-del:hover { color: #ff6b9d; background: rgba(255, 107, 157, 0.1); }
 
 .card h3 {
@@ -1033,7 +1081,7 @@ function timeAgo(dateStr) {
   background: rgba(18, 12, 28, 0.97);
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  padding: 28px;
+  padding: 28px 28px 10px;
   width: 100%;
   max-width: 480px;
   display: flex;
@@ -1150,7 +1198,7 @@ function timeAgo(dateStr) {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
-  padding-top: 4px;
+  padding-top: 10px;
   border-top: 1px solid var(--glass-border);
 }
 .modal-actions .btn { border-radius: 12px; }
