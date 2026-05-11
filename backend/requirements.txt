@@ -8,3 +8,4 @@ tzdata==2025.3
 httpx
 beautifulsoup4
 langchain-openai
+python-alipay-sdk

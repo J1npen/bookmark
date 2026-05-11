@@ -2,7 +2,8 @@ import os
 from django.http import HttpResponse
 from django.shortcuts import render
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view
+from rest_framework.decorators import action, api_view
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from .serializers import BookmarkSerializer, TagSerializer
 from .models import Bookmarks, Tags, BookmarkTags, UserBookmarks, UserTags
@@ -126,7 +127,6 @@ def describe_url(request):
         system_prompt = (
             '你是一个网页内容摘要助手。'
             '请严格根据用户提供的网页信息生成描述，禁止凭借领域知识推断或补充页面未提及的内容。'
-            '若页面内容含义不明或严重不足，请只输出：页面内容不足，建议手动填写描述。\n\n'
             '格式要求：\n'
             '- 输出 1-2 句中文，直接输出描述，不加任何前缀\n'
             '- 中英文混排时，在中文字符与英文、数字、符号之间加一个半角空格（如"使用 Python 构建"而非"使用Python构建"）'
@@ -154,6 +154,12 @@ def describe_url(request):
     except Exception:
         return Response({'description': ''})
 
+class BookmarkPagination(PageNumberPagination):
+    page_size = 21
+    page_size_query_param = 'page_size'
+    max_page_size = 60
+
+
 class BookmarkViewSet(viewsets.ModelViewSet):
     """
     书签 CRUD API
@@ -162,8 +168,11 @@ class BookmarkViewSet(viewsets.ModelViewSet):
       ?tag=<slug>       — 按标签 slug
       ?keyword=<text>   — 关键词搜索
       ?search_in=title|description|all  — 搜索范围（默认 title）
+      ?page=<n>         — 页码
+      ?page_size=<n>    — 每页数量（最大 60）
     """
     serializer_class = BookmarkSerializer
+    pagination_class = BookmarkPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -200,6 +209,15 @@ class BookmarkViewSet(viewsets.ModelViewSet):
         bookmark = self.get_object()
         UserBookmarks.objects.filter(user=request.user, bookmark=bookmark).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
+    def visit(self, request, pk=None):
+        bookmark = self.get_object()
+        from django.utils import timezone
+        bookmark.visit_count = (bookmark.visit_count or 0) + 1
+        bookmark.last_visit = timezone.now()
+        bookmark.save(update_fields=['visit_count', 'last_visit'])
+        return Response({'visit_count': bookmark.visit_count})
     
 class TagViewSet(viewsets.ModelViewSet):
     """标签 CRUD API"""
