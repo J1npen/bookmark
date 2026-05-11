@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth.js'
 const routes = [
   { path: '/login', component: LoginView },
   { path: '/', component: HomeView, meta: { requiresAuth: true } },
+  { path: '/demo', component: () => import('../views/DemoView.vue') },
 ]
 
 const router = createRouter({
