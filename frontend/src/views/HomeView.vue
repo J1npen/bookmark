@@ -5,6 +5,48 @@
   <div class="blob blob-3"></div>
   <div class="blob blob-4"></div>
 
+  <!-- 移动端遮罩 -->
+  <div class="scrim" :class="{ open: drawerOpen }" @click="closeDrawer"></div>
+
+  <!-- 移动端抽屉 -->
+  <aside class="drawer" :class="{ open: drawerOpen }">
+    <div class="drawer-head">
+      <div class="drawer-brand">书<span>·</span>签</div>
+      <button class="icon-btn" @click="closeDrawer" aria-label="关闭菜单">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-scroll">
+      <div class="nav-label">资料库</div>
+      <button class="nav-item" :class="{ active: activeTag === '' }" @click="setTag('')">
+        <span class="dot"></span>全部书签
+        <span class="nav-count">{{ bmStore.total }}</span>
+      </button>
+      <template v-if="tagStore.items.length">
+        <div class="nav-label">标签</div>
+        <button
+          v-for="tag in tagStore.items"
+          :key="tag.id"
+          class="nav-item"
+          :class="{ active: activeTag === tag.slug }"
+          @click="setTag(tag.slug)"
+        >
+          <span class="dot" :style="{ color: tag.color || 'var(--ink-dim)' }"></span>
+          {{ tag.name }}
+        </button>
+      </template>
+    </div>
+    <div class="drawer-foot">
+      <div class="avatar">{{ userInitial }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ auth.username || '用户' }}</div>
+        <div class="user-sub">书签管理器</div>
+      </div>
+    </div>
+  </aside>
+
   <div class="layout">
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
@@ -73,6 +115,27 @@
     <main class="main">
       <!-- Topbar -->
       <div class="topbar">
+        <!-- 移动端顶栏行 -->
+        <div class="topbar-mobile-row">
+          <button class="icon-btn" @click="openDrawer" aria-label="打开菜单">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/>
+            </svg>
+          </button>
+          <div class="mobile-brand">书<span>·</span>签</div>
+          <button class="icon-btn icon-btn-primary" @click="showAddForm = true" aria-label="添加书签">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button class="icon-btn icon-btn-ghost" @click="doLogout" aria-label="登出">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
         <div class="search" @click="focusSearch">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5;flex-shrink:0">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -88,6 +151,24 @@
         </div>
         <div class="top-actions">
           <button class="btn btn-primary" @click="showAddForm = true">＋ 新建书签</button>
+        </div>
+      </div>
+
+      <!-- 移动端标签芯片 -->
+      <div class="chips-wrap">
+        <div class="chips">
+          <div class="chip" :class="{ active: activeTag === '' }" @click="setTag('')">
+            全部 <span class="chip-count">{{ bmStore.total }}</span>
+          </div>
+          <div
+            v-for="tag in tagStore.items"
+            :key="tag.id"
+            class="chip"
+            :class="{ active: activeTag === tag.slug }"
+            @click="setTag(tag.slug)"
+          >
+            {{ tag.name }}
+          </div>
         </div>
       </div>
 
@@ -144,7 +225,26 @@
             <div class="tags">
               <span v-for="tag in bm.tags" :key="tag.id" class="tag">{{ tag.name }}</span>
             </div>
-            <div class="meta">{{ timeAgo(bm.created_at) }}</div>
+            <div class="meta">{{ bm.visit_count ?? 0 }} 次浏览</div>
+            <div class="card-actions-mobile">
+              <span class="visits">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                {{ bm.visit_count ?? 0 }}
+              </span>
+              <button class="card-act-btn" @click.stop="openEditModal(bm)" aria-label="编辑">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="card-act-btn del" @click.stop="remove(bm.id)" aria-label="删除">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1.5 14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </article>
       </div>
@@ -307,6 +407,7 @@ const saving = ref(false)
 const editingId = ref(null)
 const failedFavicons = reactive({})
 const jumpInput = ref(1)
+const drawerOpen = ref(false)
 
 // 翻页状态与 store.page 保持同步
 watch(() => bmStore.page, v => { jumpInput.value = v })
@@ -345,11 +446,15 @@ onUnmounted(() => {
   document.removeEventListener('click', handleDocClick)
 })
 
+function openDrawer() { drawerOpen.value = true }
+function closeDrawer() { drawerOpen.value = false }
+
 function handleKeydown(e) {
   if (e.key === 'Escape') {
     if (showAddForm.value) closeModal()
     else if (showSettings.value) showSettings.value = false
     else if (footerMenuOpen.value) footerMenuOpen.value = false
+    else if (drawerOpen.value) closeDrawer()
   }
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     e.preventDefault()
@@ -387,6 +492,7 @@ function setTag(slug) {
   bmStore.page = 1
   keyword.value = ''
   bmStore.load()
+  closeDrawer()
 }
 
 let searchTimer = null
@@ -1287,22 +1393,173 @@ function timeAgo(dateStr) {
   white-space: nowrap;
 }
 
+/* ── 移动端新增基础类（默认隐藏）── */
+.scrim { display: none; }
+.drawer { display: none; }
+.topbar-mobile-row { display: none; }
+.mobile-brand { display: none; font-family: var(--font-serif); font-size: 20px; font-weight: 500; letter-spacing: 0.05em; flex: 1; margin-left: 4px; }
+.mobile-brand span { color: var(--accent); margin: 0 3px; }
+.chips-wrap { display: none; }
+.card-actions-mobile { display: none; }
+
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--ink);
+  display: grid; place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.icon-btn:active { background: var(--glass-hover); transform: scale(0.95); }
+.icon-btn-primary { background: var(--accent); border-color: transparent; color: #2a1810; }
+.icon-btn-primary:active { background: #ffc99a; }
+.icon-btn-ghost { background: transparent; border-color: rgba(255,255,255,0.1); color: var(--ink-dim); }
+.icon-btn-ghost:active { background: rgba(255,107,138,0.1); color: var(--danger); }
+
+.visits {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 6px;
+  background: rgba(255,180,122,0.08); border: 1px solid rgba(255,180,122,0.15);
+  color: var(--accent); font-family: var(--font-mono); font-size: 10.5px;
+  margin-right: 2px;
+}
+.visits svg { stroke: currentColor; opacity: 0.85; }
+
+.card-act-btn {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: transparent; border: none; color: var(--ink-faint);
+  display: grid; place-items: center; cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.card-act-btn:active { background: var(--glass-hover); color: var(--ink); }
+.card-act-btn.del:active { background: rgba(255,107,138,0.1); color: var(--danger); }
+
+.chip {
+  flex-shrink: 0; padding: 7px 14px; border-radius: 999px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  font-size: 12.5px; color: var(--ink-dim); white-space: nowrap; cursor: pointer;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  transition: transform 0.15s;
+}
+.chip:active { transform: scale(0.94); }
+.chip.active { background: var(--ink); color: #0a0612; border-color: var(--ink); font-weight: 500; }
+.chip-count { font-family: var(--font-mono); font-size: 10.5px; margin-left: 4px; opacity: 0.55; }
+.chip.active .chip-count { opacity: 0.6; }
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .layout {
-    grid-template-columns: 1fr;
-    padding: 16px;
-    gap: 16px;
-  }
-  .sidebar {
-    position: static;
-    height: auto;
-    border-radius: 16px;
-    padding: 20px 16px;
-  }
-  .header h1 { font-size: 36px; }
-  .topbar { flex-direction: column; align-items: stretch; }
-  .search { max-width: none; }
+  /* 隐藏桌面端元素 */
+  .sidebar { display: none; }
+  .top-actions { display: none; }
+  .card-edit, .card-del { display: none; }
+  .meta { display: none; }
   .kbd { display: none; }
+  .header { display: none; }
+
+  /* 布局 */
+  .layout { grid-template-columns: 1fr; padding: 0; gap: 0; }
+  .main { padding: 0; overflow-x: hidden; }
+
+  /* 粘性顶栏 */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,6,18,0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 12px;
+    margin-bottom: 0;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  /* 移动端顶栏行 */
+  .topbar-mobile-row { display: flex; align-items: center; gap: 8px; }
+  .mobile-brand { display: block; }
+
+  /* 搜索框 */
+  .search { max-width: none; }
+  .search input:focus { font-size: 16px; }
+
+  /* 标签芯片 */
+  .chips-wrap { display: block; padding: 14px 0 8px; overflow: hidden; }
+  .chips {
+    display: flex; gap: 8px; padding: 0 16px;
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+
+  /* 卡片网格 */
+  .grid { display: flex; flex-direction: column; gap: 12px; padding: 0 16px 24px; }
+
+  /* 卡片交互 */
+  .card:active { transform: scale(0.98); }
+  .card:hover { transform: none; background: var(--glass-bg); border-color: var(--glass-border); }
+
+  /* 移动端卡片操作区 */
+  .card-actions-mobile { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+  /* 分页 */
+  .pagination {
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    margin-top: 4px;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  /* 遮罩 */
+  .scrim {
+    display: block;
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+
+  /* 抽屉 */
+  .drawer {
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; bottom: 0; left: 0;
+    width: min(82%, 320px); z-index: 201;
+    background: rgba(20,14,32,0.92);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-right: 1px solid var(--glass-border);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding: calc(env(safe-area-inset-top, 0px) + 24px) 0 calc(env(safe-area-inset-bottom, 0px) + 16px);
+    overflow: hidden;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-head {
+    padding: 0 24px 20px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .drawer-brand { font-family: var(--font-serif); font-size: 24px; font-weight: 500; letter-spacing: 0.05em; }
+  .drawer-brand span { color: var(--accent); margin: 0 3px; }
+  .drawer-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 16px 16px 8px; overscroll-behavior: contain;
+  }
+  .drawer-foot {
+    padding: 16px 24px 0; border-top: 1px solid var(--glass-border);
+    display: flex; align-items: center; gap: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .card { padding: 14px; }
+  .mobile-brand { font-size: 18px; }
+  .topbar-mobile-row { gap: 6px; }
+  .page-btn { padding: 8px 10px; font-size: 12px; }
 }
 </style>
