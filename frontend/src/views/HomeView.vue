@@ -1470,7 +1470,7 @@ function timeAgo(dateStr) {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 12px;
+    padding: calc(var(--safe-top) + 12px) 14px 12px;
     margin-bottom: 0;
     flex-direction: column;
     gap: 10px;
@@ -1507,9 +1507,11 @@ function timeAgo(dateStr) {
 
   /* 分页 */
   .pagination {
-    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 4px 16px calc(16px + var(--safe-bottom));
     margin-top: 4px;
     border-top: 1px solid var(--glass-border);
+    flex-direction: column;
+    align-items: center;
   }
 
   /* 遮罩 */
@@ -1534,7 +1536,7 @@ function timeAgo(dateStr) {
     border-right: 1px solid var(--glass-border);
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    padding: calc(env(safe-area-inset-top, 0px) + 24px) 0 calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding: calc(var(--safe-top) + 24px) 0 calc(var(--safe-bottom) + 16px);
     overflow: hidden;
   }
   .drawer.open { transform: translateX(0); }
@@ -1554,6 +1556,11 @@ function timeAgo(dateStr) {
     padding: 16px 24px 0; border-top: 1px solid var(--glass-border);
     display: flex; align-items: center; gap: 10px;
   }
+}
+
+@media (max-width: 900px) {
+  .url-row { flex-direction: column; }
+  .url-row .fetch-btn { width: 100%; text-align: center; }
 }
 
 @media (max-width: 360px) {

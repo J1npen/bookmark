@@ -41,6 +41,9 @@ if DEBUG:
         'http://localhost:5173',
         'http://127.0.0.1:5173',
     ]
+    for _h in os.environ.get('ALLOWED_HOSTS', '').split(','):
+        if _h:
+            CSRF_TRUSTED_ORIGINS += [f'http://{_h}:5173', f'http://{_h}:8000']
 
 
 # Application definition

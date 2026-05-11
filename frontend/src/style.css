@@ -11,6 +11,8 @@
   --font-sans: 'Noto Sans SC', -apple-system, sans-serif;
   --font-serif: 'Noto Serif SC', 'Fraunces', serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,7 +41,11 @@ body::before {
   mix-blend-mode: overlay;
 }
 
-#app { min-height: 100vh; position: relative; }
+#app { min-height: 100vh; min-height: 100dvh; position: relative; }
+
+@media (max-width: 900px) {
+  #app { padding-bottom: calc(var(--safe-bottom)); }
+}
 
 /* ── Global scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

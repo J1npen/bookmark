@@ -1,6 +1,7 @@
 import os
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.pagination import PageNumberPagination
@@ -9,6 +10,7 @@ from .serializers import BookmarkSerializer, TagSerializer
 from .models import Bookmarks, Tags, BookmarkTags, UserBookmarks, UserTags
 from django.db.models import Q
 
+@ensure_csrf_cookie
 def index(request):
     return HttpResponse("<h1>Bookmark API</h1>")
 
