@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR.parent / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -35,6 +35,12 @@ CSRF_TRUSTED_ORIGINS = [
 ] + [
     f'http://{host}' for host in os.environ.get('ALLOWED_HOSTS', '').split(',') if host
 ]
+
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ]
 
 
 # Application definition
