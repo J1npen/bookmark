@@ -157,6 +157,20 @@ REST_FRAMEWORK = {
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# CSRF 和 Session Cookie 配置
+# 生产环境使用 HTTPS，需要设置 secure cookies
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+else:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+
+# 确保 CSRF cookie 可以被 JavaScript 读取（默认就是 False，这里显式声明）
+CSRF_COOKIE_HTTPONLY = False
+
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com')
 

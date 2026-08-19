@@ -12,7 +12,8 @@ const http = axios.create({
 })
 
 http.interceptors.request.use(config => {
-  if (['post', 'put', 'patch', 'delete'].includes(config.method)) {
+  // 对于传统的 Django 表单登录，跳过 header 注入，使用表单中的 csrfmiddlewaretoken
+  if (['post', 'put', 'patch', 'delete'].includes(config.method) && !config.skipCsrfHeader) {
     config.headers['X-CSRFToken'] = getCsrfToken()
   }
   return config

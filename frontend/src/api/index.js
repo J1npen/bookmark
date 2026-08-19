@@ -18,6 +18,7 @@ export async function login(username, password) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     maxRedirects: 0,
     validateStatus: s => s < 400,
+    skipCsrfHeader: true,  // 跳过 Axios 拦截器的 CSRF header，避免与表单 token 冲突
   })
   try {
     await http.get('/api/bookmarks/')
